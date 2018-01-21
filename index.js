@@ -3,40 +3,44 @@ const assert = require('assert');
 
 const url = 'mongodb://localhost:27017/conFusion';
 
-MongoClient.connect(url, (err, db) => {
+const dboper = require('./operations');
 
-    assert.equal(err,null);
+MongoClient.connect(url).then((db) => {
 
     console.log('Connected correctly to server');
-    
     const myDB = db.db('conFusion');
+    
+    dboper.insertDocument(myDB, { name: "Vadonut", description: "Test"},
+        "dishes")
+        .then((result) => {
+            console.log("Insert Document:\n", result.ops);
 
-    const collection = myDB.collection("dishes");
-    collection.insertOne({"name": "Uthappizza", "description": "test"},
-    (err, result) => {
-        assert.equal(err,null);
+            return dboper.findDocuments(myDB, "dishes");
+        })
+        .then((docs) => {
+            console.log("Found Documents:\n", docs);
 
-        console.log("After Insert:\n");
-        console.log(result.ops);
+            return dboper.updateDocument(myDB, { name: "Vadonut" },
+                    { description: "Updated Test" }, "dishes");
 
-        collection.find({}).toArray((err, docs) => {
-            assert.equal(err,null);
-            
-            console.log("Found:\n");
-            console.log(docs);
+        })
+        .then((result) => {
+            console.log("Updated Document:\n", result.result);
 
-            myDB.dropCollection("dishes", (err, result) => {
-                assert.equal(err,null);
+            return dboper.findDocuments(myDB, "dishes");
+        })
+        .then((docs) => {
+            console.log("Found Updated Documents:\n", docs);
+                            
+            return myDB.dropCollection("dishes");
+        })
+        .then((result) => {
+            console.log("Dropped Collection: ", result);
 
-                db.close();
-            });
-        });
-    });
+            return db.close();
+        })
+        .catch((err) => console.log(err));
 
-});
-
-
-
-
-
+})
+.catch((err) => console.log(err));
  
